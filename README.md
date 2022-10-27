@@ -44,11 +44,13 @@ $class->run();
  * @return void
  */
 add_action( 'wp_head', function() {
+	// Bail if Mai Link Injector is not active.
 	if ( ! class_exists( 'Mai_Link_Injector' ) ) {
 		return;
 	}
 
-	if ( ! is_singular( 'post' ) ) {
+	// Bail if not on a single post/page/cpt.
+	if ( ! is_singular() ) {
 		return;
 	}
 

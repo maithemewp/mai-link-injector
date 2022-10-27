@@ -86,7 +86,7 @@ final class Mai_Link_Injector_Plugin {
 	 * @return  void
 	 */
 	private function includes() {
-		include MAI_POPUPS_PLUGIN_DIR . 'blocks/mai-popup/block.php';
+		include __DIR__ . '/classes/class-link-injector.php';
 	}
 
 	/**
