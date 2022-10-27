@@ -4,15 +4,11 @@ A programmatic plugin to automatically link keywords to any url.
 ## How it works
 If a post has any keywords you set (case-insensitive) it will automatically be linked. If "broccoli" was your key word, these sentences:
 
-```
-Broccoli is my favorite vegetable. My favorite way to eat broccoli is with salt and butter.
-```
+"Broccoli is my favorite vegetable. My favorite way to eat broccoli is with salt and butter."
 
 Mai Link Injector will dynamically add links to the text, keeping the case as-is:
 
-```
-<a href="https://example.com">Broccoli</a> is my favorite vegetable. My favorite way to eat <a href="https://example.com">broccoli</a> is with salt and butter.
-```
+"<a href="https://example.com">Broccoli</a> is my favorite vegetable. My favorite way to eat <a href="https://example.com">broccoli</a> is with salt and butter."
 
 ## Usage
 
