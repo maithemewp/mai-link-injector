@@ -119,3 +119,24 @@ add_action( 'genesis_before_loop', function() {
 	$class->run();
 });
 ```
+## Limiting elements
+Text within the following elements will not have links created:
+```
+h1
+h2
+h3
+h4
+h5
+h6
+a
+blockquote
+button
+input
+select
+submit
+textarea
+```
+If you'd like to add or remove these elements, the following filter is available:
+```
+$invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );
+```
