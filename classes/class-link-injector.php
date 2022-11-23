@@ -143,7 +143,7 @@ class Mai_Link_Injector {
 				}
 
 				$link     = sprintf( '<a href="%s">%s</a>', esc_url( $url ), wp_kses_post( $keywords ) );
-				$replaced = preg_replace( "/\b({$keywords})\b/i", sprintf( '<a href="%s">', esc_url( $url ) ) . "$1" . '</a>', $node->nodeValue );
+				$replaced = preg_replace( "/\b({$keywords})\b/i", sprintf( '<a href="%s">', esc_url( $url ) ) . "$1" . '</a>', htmlspecialchars( $node->nodeValue ) ); // `htmlspecialchars()` added because "&" in content threw errors.
 				$fragment = $dom->createDocumentFragment();
 				$fragment->appendXml( $replaced );
 				$node->parentNode->replaceChild( $fragment, $node );
