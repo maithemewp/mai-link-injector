@@ -36,7 +36,7 @@ add_filter( 'mai_link_injector', function( $options ) {
 	// Optionally use conditional tags to conditionally load links.
 
 	// Add new links.
-	$options['links] = array_merge( $options['links], $new );
+	$options['links'] = array_merge( $options['links'], $links );
 
 	reutrn $options;
 });
