@@ -152,13 +152,15 @@ class Mai_Link_Injector {
 		}
 
 		// Save new HTML without html/body wrap.
-		$content = substr( $dom->saveHTML(), 12, -15 );
+		$content = substr( $dom->saveHTML( $dom->documentElement ), 12, -15 );
 
 		return $content;
 	}
 
 	/**
 	 * Sanitized a string to lowercase, keeping character encoding.
+	 *
+	 * @since 0.1.0
 	 *
 	 * @param string $string The string to make lowercase.
 	 *

@@ -4,7 +4,7 @@
  * Plugin Name:     Mai Link Injector
  * Plugin URI:      https://bizbudding.com/
  * Description:     A programmatic plugin to automatically link keywords to any url.
- * Version:         1.0.1
+ * Version:         1.1.0
  *
  * Author:          BizBudding
  * Author URI:      https://bizbudding.com
@@ -12,6 +12,9 @@
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) exit;
+
+// Must be at the top of the file.
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 /**
  * Main Mai_Link_Injector_Plugin Class.
@@ -86,7 +89,10 @@ final class Mai_Link_Injector_Plugin {
 	 * @return  void
 	 */
 	private function includes() {
+		include __DIR__ . '/includes/functions.php';
+		include __DIR__ . '/classes/class-settings.php';
 		include __DIR__ . '/classes/class-link-injector.php';
+		include __DIR__ . '/classes/class-adder.php';
 	}
 
 	/**
@@ -97,6 +103,7 @@ final class Mai_Link_Injector_Plugin {
 	 */
 	public function hooks() {
 		add_action( 'plugins_loaded', [ $this, 'updater' ] );
+		add_action( 'plugins_loaded', [ $this, 'classes' ] );
 	}
 
 	/**
@@ -109,18 +116,13 @@ final class Mai_Link_Injector_Plugin {
 	 * @return void
 	 */
 	public function updater() {
-		// Bail if current user cannot manage plugins.
-		if ( ! current_user_can( 'install_plugins' ) ) {
-			return;
-		}
-
 		// Bail if plugin updater is not loaded.
-		if ( ! class_exists( 'Puc_v4_Factory' ) ) {
+		if ( ! class_exists( 'YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
 			return;
 		}
 
 		// Setup the updater.
-		$updater = Puc_v4_Factory::buildUpdateChecker( 'https://github.com/maithemewp/mai-link-injector', __FILE__, 'mai-link-injector' );
+		$updater = PucFactory::buildUpdateChecker( 'https://github.com/maithemewp/mai-link-injector', __FILE__, 'mai-link-injector' );
 
 		// Set the stable branch.
 		$updater->setBranch( 'main' );
@@ -140,18 +142,22 @@ final class Mai_Link_Injector_Plugin {
 			);
 		}
 	}
+
+	/**
+	 * Loads classes.
+	 *
+	 * @since TBD
+	 *
+	 * @return void
+	 */
+	public function classes() {
+		$settings = new Mai_Link_Injector_Settings;
+		$settings = new Mai_Link_Injector_Adder;
+	}
 }
 
 /**
  * The main function for that returns Mai_Link_Injector_Plugin
- *
- * The main function responsible for returning the one true Mai_Link_Injector_Plugin
- * Instance to functions everywhere.
- *
- * Use this function like you would a global variable, except without needing
- * to declare the global.
- *
- * Example: <?php $plugin = Mai_Link_Injector_Plugin(); ?>
  *
  * @since 0.1.0
  *
