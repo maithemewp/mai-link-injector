@@ -24,7 +24,7 @@ $links = [
 // Instantiates class.
 $class = new Mai_Link_Injector( $links );
 
-// Optionally limits tthe amount of instances specific keywords gets linked per-page.
+// Optionally limit the amount of instances specific keywords gets linked per-page.
 // Use zero or don't add this to link all instances.
 $class->set_limit( 2 );
 
