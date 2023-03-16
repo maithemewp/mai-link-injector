@@ -8,7 +8,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Mai_Link_Injector_Settings constructor.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
@@ -19,7 +19,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Runs hooks.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
@@ -36,7 +36,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Registers options page and field groups from settings and custom block.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
@@ -136,7 +136,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Gets inline admin CSS.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param array $field
 	 *
@@ -168,7 +168,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Loads post types.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param array $field The field data.
 	 *
@@ -188,7 +188,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Loads limit field value from our custom option.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param array $field The field data.
 	 *
@@ -202,7 +202,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Loads links repeater field values from our custom option.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param array $field The field data.
 	 *
@@ -233,7 +233,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Updates and deletes options when saving the settings page.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param mixed $post_id The post ID from ACF.
 	 *
@@ -306,7 +306,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Return the plugin action links.  This will only be called if the plugin is active.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param array  $actions     Associative array of action names to anchor tags
 	 * @param string $plugin_file Plugin file name, ie my-plugin/my-plugin.php
@@ -316,6 +316,10 @@ class Mai_Link_Injector_Settings {
 	 * @return array associative array of plugin action links
 	 */
 	function add_settings_link( $actions, $plugin_file, $plugin_data, $context ) {
+		if ( ! class_exists( 'acf_pro' ) ) {
+			return $actions;
+		}
+
 		$actions['settings'] = $this->get_settings_link( __( 'Settings', 'mai-link-injector' ) );
 
 		return $actions;
@@ -324,7 +328,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Gets settings link.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @param string $text
 	 *

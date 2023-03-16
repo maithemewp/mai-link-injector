@@ -90,9 +90,12 @@ final class Mai_Link_Injector_Plugin {
 	 */
 	private function includes() {
 		include __DIR__ . '/includes/functions.php';
-		include __DIR__ . '/classes/class-settings.php';
 		include __DIR__ . '/classes/class-link-injector.php';
 		include __DIR__ . '/classes/class-adder.php';
+
+		if ( is_admin() ) {
+			include __DIR__ . '/classes/class-settings.php';
+		}
 	}
 
 	/**
@@ -146,13 +149,16 @@ final class Mai_Link_Injector_Plugin {
 	/**
 	 * Loads classes.
 	 *
-	 * @since TBD
+	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
 	public function classes() {
-		$settings = new Mai_Link_Injector_Settings;
 		$settings = new Mai_Link_Injector_Adder;
+
+		if ( is_admin() ) {
+			$settings = new Mai_Link_Injector_Settings;
+		}
 	}
 }
 

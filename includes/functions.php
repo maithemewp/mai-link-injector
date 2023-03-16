@@ -3,7 +3,7 @@
 /**
  * Gets a single option value by key.
  *
- * @since TBD
+ * @since 1.1.0
  *
  * @param string $key
  * @param mixed  $default
@@ -18,7 +18,7 @@ function maili_get_option( $key, $default = null ) {
 /**
  * Gets all options.
  *
- * @since TBD
+ * @since 1.1.0
  *
  * @return array
  */
@@ -38,7 +38,7 @@ function maili_get_options() {
 /**
  * Gets a single option default value by key.
  *
- * @since TBD
+ * @since 1.1.0
  *
  * @param string $key
  * @param mixed  $default
@@ -54,7 +54,7 @@ function maili_get_option_default( $key, $default = null ) {
 /**
  * Gets default options.
  *
- * @since TBD
+ * @since 1.1.0
  *
  * @return array
  */

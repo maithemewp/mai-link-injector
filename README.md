@@ -11,82 +11,59 @@ Mai Link Injector will dynamically add links to the text, keeping the case as-is
 "<a href="https://example.com">Broccoli</a> is my favorite vegetable. My favorite way to eat <a href="https://example.com">broccoli</a> is with salt and butter."
 
 ## Usage
+1. Visit Dashboard > Mai Theme > Link Injector (if using Mai Theme) or Dashboard > Settings > Mai Link Injector.
+2. Add links and optionally modify settings.
+3. That's it!
 
-Use the `Mai_Link_Injector` class to setup links and any conditions you want via:
-```
-// Sets up links.
-$links = [
-	'some keywords' => 'https://bizbudding.com',
-	'mai theme'     => 'https://bizbudding.com/mai-theme',
-	'maple syrup'   => 'https://sugarmakers.org/',
-];
+## Programmatic Usage
 
-// Instantiates class.
-$class = new Mai_Link_Injector( $links );
-
-// Optionally limit the amount of instances specific keywords gets linked per-page.
-// Use zero or don't add this to link all instances.
-$class->set_limit( 2 );
-
-// Run. This must be before the main content.
-$class->run();
-```
-
-## Basic example
+Programmatically add links via the `mai_link_injector_links` filter.
 ```
 /**
- * Sets up Mai Link Injector.
+ * Adds links to Mai Link Injector.
  *
- * @return void
+ * @param array $options
+ *
+ * @return array
  */
-add_action( 'wp_head', function() {
-	// Bail if Mai Link Injector is not active.
-	if ( ! class_exists( 'Mai_Link_Injector' ) ) {
-		return;
-	}
-
-	// Bail if not on a single post/page/cpt.
-	if ( ! is_singular() ) {
-		return;
-	}
-
-	$links = [
+add_filter( 'mai_link_injector', function( $options ) {
+	$new = [
 		'some keywords' => 'https://bizbudding.com',
 		'mai theme'     => 'https://bizbudding.com/mai-theme',
 		'maple syrup'   => 'https://sugarmakers.org/',
 	];
 
-	$class = new Mai_Link_Injector( $links );
-	$class->set_limit( 4 );
-	$class->run();
+	// Optionally use conditional tags to conditionally load links.
+
+	// Add new links.
+	$options['links] = array_merge( $options['links], $new );
+
+	reutrn $options;
 });
 ```
 
-## Dynamic example
+## Programmatic Usage - Dynamic example
 This example automatically gets all of the post categories and uses the category name as the keyword(s) and the category archive url as the url. Any post with a same text as a category name will automatically have a link to that category archive.
 
 ```
 /**
- * Get is started.
+ * Conditionally adds category archive links to Mai Link Injector.
  *
- * @return void
+ * @param array $options
+ *
+ * @return array
  */
-add_action( 'genesis_before_loop', function() {
-	// Bail if Mai Link Injector is not active.
-	if ( ! class_exists( 'Mai_Link_Injector' ) ) {
-		return;
-	}
-
-	// Bail if not on a single post/page/cpt.
-	if ( ! is_singular() ) {
-		return;
+add_filter( 'mai_link_injector', function( $options ) {
+	// Bail if not a single post.
+	if ( ! is_singular( 'post' ) ) {
+		return $options;
 	}
 
 	// Set taxonomy name.
 	$taxonomy = 'category';
 
 	// Get all terms.
-	$terms    = get_terms(
+	$terms = get_terms(
 		[
 			'taxonomy'   => $taxonomy,
 			'hide_empty' => false,
@@ -95,7 +72,7 @@ add_action( 'genesis_before_loop', function() {
 
 	// Bail if no terms.
 	if ( ! $terms || is_wp_error( $terms ) ) {
-		return;
+		return $options;
 	}
 
 	// Create array of keywords => links.
@@ -107,14 +84,17 @@ add_action( 'genesis_before_loop', function() {
 
 	// Bail if no links.
 	if ( ! $links ) {
-		return;
+		return $options;
 	}
 
-	// Run.
-	$class = new Mai_Link_Injector( $links );
-	$class->run();
+	$options['singles'][] = 'post'; // Make sure posts are set to inject links.
+	$options['singles']   = array_unique( $options['singles'] ); // Remove duplicates.
+	$options['links']     = array_merge( $options['links'], $links ); // Adds new links.
+
+	return $options;
 });
 ```
+
 ## Limiting elements
 Text within the following elements will not have links created:
 ```
