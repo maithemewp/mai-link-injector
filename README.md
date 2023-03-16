@@ -1,8 +1,8 @@
 # Mai Link Injector
-A programmatic plugin to automatically link keywords to any url.
+A plugin to automatically link keywords to any url. Settings page requires Mai Theme or ACF Pro.
 
 ## How it works
-If a post has any keywords you set (case-insensitive) it will automatically be linked. If "broccoli" was your key word, these sentences:
+If a post has any keywords you set (case-insensitive) it will automatically be linked. If "broccoli" was your keyword, use this sentence as an example:
 
 "Broccoli is my favorite vegetable. My favorite way to eat broccoli is with salt and butter."
 
