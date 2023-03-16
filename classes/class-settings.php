@@ -61,7 +61,7 @@ class Mai_Link_Injector_Settings {
 					[
 						'key'      => 'maili_message',
 						'type'     => 'message',
-						'message'  => __( 'Add text and link pairs for auto linking. Text values are case-insensitive - links are added regardless of case, and retain whatever the inital text case was. Text inside of a link/button/etc. will be skipped. If there are multiple matches the first one will be used.', 'mai-link-injector' ),
+						'message'  => '',
 						'esc_html' => 0,
 					],
 					[
@@ -87,10 +87,10 @@ class Mai_Link_Injector_Settings {
 					],
 					[
 						'label'        => __( 'Links', 'mai-link-injector' ),
+						'instructions' => __( 'Add text and link pairs for auto-linking. If there are multiple matches, the first one added here will be used. Case-insensitive', 'mai-link-injector' ),
 						'key'          => 'maili_links',
 						'name'         => 'links',
 						'type'         => 'repeater',
-						'instructions' => '',
 						'collapsed'    => 'maili_text',
 						'min'          => 0,
 						'max'          => 0,
