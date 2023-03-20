@@ -95,8 +95,8 @@ class Mai_Link_Injector_Settings {
 						'min'           => 0,
 						'max'           => 0,
 						'layout'        => 'table',
-						'pagination'    => 1,
-						'rows_per_page' => 25,
+						// 'pagination'    => 1,
+						// 'rows_per_page' => 25,
 						'button_label'  => __( 'Add New Link', 'mai-link-injector' ),
 						'sub_fields'    => [
 							[
@@ -291,9 +291,11 @@ class Mai_Link_Injector_Settings {
 
 		// To delete.
 		$options = [
+			'options_links',
 			'options_maili_singles',
 			'options_maili_limit',
 			'options_maili_links',
+			'_options_links',
 			'_options_maili_singles',
 			'_options_maili_limit',
 			'_options_maili_links',
