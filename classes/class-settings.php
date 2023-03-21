@@ -4,7 +4,6 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Mai_Link_Injector_Settings {
-
 	/**
 	 * Mai_Link_Injector_Settings constructor.
 	 *
@@ -28,7 +27,10 @@ class Mai_Link_Injector_Settings {
 		add_action( 'acf/render_field/key=maili_limit', [ $this, 'admin_css' ] );
 		add_filter( 'acf/load_field/key=maili_singles', [ $this, 'load_singles' ] );
 		add_filter( 'acf/load_field/key=maili_limit',   [ $this, 'load_limit' ] );
-		add_filter( 'acf/load_field/key=maili_links',   [ $this, 'load_links' ] );
+		add_filter( 'acf/pre_load_metadata',            [ $this, 'load_links_count' ], 10, 4 );
+		add_filter( 'acf/load_field/key=maili_links',   [ $this, 'load_links_field' ] );
+		add_filter( 'acf/load_value/key=maili_links',   [ $this, 'load_links_values' ], 10, 3 );
+		// add_filter( 'acf/load_field/key=maili_text',   [ $this, 'load_text' ] );
 		add_action( 'acf/save_post',                    [ $this, 'save' ], 99 );
 		add_filter( 'plugin_action_links_mai-link-injector/mai-link-injector.php', [ $this, 'add_settings_link' ], 10, 4 );
 	}
@@ -95,8 +97,8 @@ class Mai_Link_Injector_Settings {
 						'min'           => 0,
 						'max'           => 0,
 						'layout'        => 'table',
-						// 'pagination'    => 1,
-						// 'rows_per_page' => 25,
+						'pagination'    => 1,
+						'rows_per_page' => 2,
 						'button_label'  => __( 'Add New Link', 'mai-link-injector' ),
 						'sub_fields'    => [
 							[
@@ -201,6 +203,57 @@ class Mai_Link_Injector_Settings {
 		return $field;
 	}
 
+	function load_links_count( $data, $post_id, $name, $hidden ) {
+		if ( 'options' !== $post_id ) {
+			return $data;
+		}
+
+		if ( 'links' !== $name ) {
+			return $data;
+		}
+
+		return count( maili_get_option( 'links' ) );
+	}
+
+	/**
+	 * Loads links repeater field values from our custom option.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param mixed      $value   The field value.
+	 * @param int|string $post_id The post ID where the value is saved.
+	 * @param array      $field    The field array containing all settings.
+	 *
+	 * @return array
+	 */
+	function load_links_values( $value, $post_id, $field ) {
+		// if ( doing_action( 'acf/save_post' ) || did_action( 'acf/save_post' ) ) {
+		// 	return $value;
+		// }
+		$links = maili_get_option( 'links' );
+
+		if ( ! $links ) {
+			return $value;
+		}
+
+		$value = [];
+		$rows  = $field['rows_per_page'];
+		$paged = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
+		$index = $paged - 1;
+		$links = array_slice( $links, $index * $rows, $rows, true );
+
+		foreach ( $links as $text => $url ) {
+			$value[ $index ] = [
+				'maili_text' => $text,
+				'maili_url'  => $url,
+			];
+
+			$index++;
+		}
+
+		return $value;
+	}
+
 	/**
 	 * Loads links repeater field values from our custom option.
 	 *
@@ -210,27 +263,95 @@ class Mai_Link_Injector_Settings {
 	 *
 	 * @return array
 	 */
-	function load_links( $field ) {
-		$field['value'] = [];
-		$links          = maili_get_option( 'links' );
+	function load_links_field( $field ) {
+		return $field;
 
-		if ( ! $links ) {
-			return $field;
-		}
 
-		foreach ( $links as $text => $url ) {
-			if ( ! ( $text && $url ) ) {
-				continue;
-			}
+		// // $field['value'] = [];
+		// $links          = maili_get_option( 'links' );
 
-			$field['value'][] = [
-				'maili_text' => $text,
-				'maili_url'  => $url,
-			];
-		}
+		// if ( ! $links ) {
+		// 	return $field;
+		// }
+
+		// $rows  = $field['rows_per_page'];
+		// $paged = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 0;
+		// $links = array_slice( $links, $paged * $rows, $rows, true );
+
+		// // ray( $links );
+
+		// // if ( ! $links ) {
+		// // 	return $field;
+		// // }
+
+		// // static $i = 1;
+
+		// foreach ( $links as $text => $url ) {
+		// 	ray( $text, $url );
+		// 	// if ( ! ( $text && $url ) ) {
+		// 	// 	continue;
+		// 	// }
+
+		// 	// if ( $i > $rows ) {
+		// 	// 	break;
+		// 	// }
+
+		// 	$field['value'][] = [
+		// 		'maili_text' => $text,
+		// 		'maili_url'  => $url,
+		// 	];
+
+		// 	// $i++;
+		// }
+
+		// ray( $field['value'] );
 
 		return $field;
 	}
+
+	// /**
+	//  *
+	//  * @param array $field The field data.
+	//  *
+	//  * @return array
+	//  */
+	// function load_text( $field ) {
+	// 	$field['value'] = '';
+	// 	$links          = maili_get_option( 'links' );
+
+	// 	if ( ! $links ) {
+	// 		return $field;
+	// 	}
+
+	// 	$number = 2;
+	// 	$paged  = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 0;
+	// 	$links  = array_slice( $links, $paged * $number, $number, true );
+
+	// 	// ray( $links );
+
+	// 	// if ( ! $links ) {
+	// 	// 	return $field;
+	// 	// }
+
+	// 	// static $i = 1;
+
+	// 	foreach ( $links as $text => $url ) {
+	// 		// if ( ! ( $text && $url ) ) {
+	// 		// 	continue;
+	// 		// }
+
+	// 		// if ( $i > $number ) {
+	// 		// 	break;
+	// 		// }
+
+	// 		$field['value'] = $text;
+
+	// 		// $i++;
+	// 	}
+
+	// 	return $field;
+	// }
+
 
 	/**
 	 * Updates and deletes options when saving the settings page.
@@ -252,6 +373,10 @@ class Mai_Link_Injector_Settings {
 			return;
 		}
 
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+
 		// Current screen.
 		$screen = get_current_screen();
 
@@ -269,6 +394,7 @@ class Mai_Link_Injector_Settings {
 
 		// Get links.
 		$links = (array) get_field( 'maili_links', 'option' );
+		ray( $links );
 
 		// Format links.
 		foreach ( $links as $values ) {
@@ -291,11 +417,9 @@ class Mai_Link_Injector_Settings {
 
 		// To delete.
 		$options = [
-			'options_links',
 			'options_maili_singles',
 			'options_maili_limit',
 			'options_maili_links',
-			'_options_links',
 			'_options_maili_singles',
 			'_options_maili_limit',
 			'_options_maili_links',
