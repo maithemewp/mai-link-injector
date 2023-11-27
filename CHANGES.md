@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.1 (11/27/23)
+* Changed: Update updater.
+
 ## 1.2.0 (3/20/23)
 * Changed: Disabled pagination on repeater since it doesn't work correctly when we load from separate option.
 
