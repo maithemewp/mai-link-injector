@@ -87,8 +87,12 @@ class Mai_Link_Injector {
 		// Modify state.
 		$libxml_previous_state = libxml_use_internal_errors( true );
 
+		// Encode. Can't use `mb_convert_encoding()` because it's deprecated in PHP 8.2.
+		// @link https://stackoverflow.com/questions/8218230/php-domdocument-loadhtml-not-encoding-utf-8-correctly
+		$content = mb_encode_numericentity( $content, [0x80, 0x10FFFF, 0, ~0], 'UTF-8' );
+
 		// Load the content in the document HTML.
-		$dom->loadHTML( mb_convert_encoding( $content, 'HTML-ENTITIES', 'UTF-8' ) );
+		$dom->loadHTML( $content );
 
 		// Remove <!DOCTYPE.
 		$dom->removeChild( $dom->doctype );
