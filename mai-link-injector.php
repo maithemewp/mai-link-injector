@@ -154,7 +154,7 @@ final class Mai_Link_Injector_Plugin {
 	 * @return void
 	 */
 	public function classes() {
-		$settings = new Mai_Link_Injector_Adder;
+		$adder = new Mai_Link_Injector_Adder;
 
 		if ( is_admin() ) {
 			$settings = new Mai_Link_Injector_Settings;
