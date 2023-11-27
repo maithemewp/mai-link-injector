@@ -7,7 +7,7 @@ namespace Composer\Autoload;
 class ComposerStaticInit8b2b4a5b2c978dfc98d1096cf2fc07ac
 {
     public static $files = array (
-        '5ff2501974ebd86c0be698ddfca6451e' => __DIR__ . '/..' . '/yahnis-elsts/plugin-update-checker/load-v5p0.php',
+        '45a16669595eb3c0a9e2994e57fc3188' => __DIR__ . '/..' . '/yahnis-elsts/plugin-update-checker/load-v5p3.php',
     );
 
     public static $classMap = array (
