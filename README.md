@@ -27,7 +27,7 @@ Programmatically add links via the `mai_link_injector_links` filter.
  * @return array
  */
 add_filter( 'mai_link_injector', function( $options ) {
-	$new = [
+	$links = [
 		'some keywords' => 'https://bizbudding.com',
 		'mai theme'     => 'https://bizbudding.com/mai-theme',
 		'maple syrup'   => 'https://sugarmakers.org/',
@@ -38,7 +38,7 @@ add_filter( 'mai_link_injector', function( $options ) {
 	// Add new links.
 	$options['links'] = array_merge( $options['links'], $links );
 
-	reutrn $options;
+	return $options;
 });
 ```
 
