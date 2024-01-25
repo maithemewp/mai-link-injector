@@ -87,15 +87,23 @@ class Mai_Link_Injector {
 		// Modify state.
 		$libxml_previous_state = libxml_use_internal_errors( true );
 
-		// Encode. Can't use `mb_convert_encoding()` because it's deprecated in PHP 8.2.
-		// @link https://stackoverflow.com/questions/8218230/php-domdocument-loadhtml-not-encoding-utf-8-correctly
+		// Encode.
 		$content = mb_encode_numericentity( $content, [0x80, 0x10FFFF, 0, ~0], 'UTF-8' );
 
 		// Load the content in the document HTML.
-		$dom->loadHTML( $content );
+		$dom->loadHTML( "<div>$content</div>" );
 
-		// Remove <!DOCTYPE.
-		$dom->removeChild( $dom->doctype );
+		// Handle wraps.
+		$container = $dom->getElementsByTagName('div')->item(0);
+		$container = $container->parentNode->removeChild( $container );
+
+		while ( $dom->firstChild ) {
+			$dom->removeChild( $dom->firstChild );
+		}
+
+		while ( $container->firstChild ) {
+			$dom->appendChild( $container->firstChild );
+		}
 
 		// Handle errors.
 		libxml_clear_errors();
@@ -155,8 +163,9 @@ class Mai_Link_Injector {
 			}
 		}
 
-		// Save new HTML without html/body wrap.
-		$content = substr( $dom->saveHTML( $dom->documentElement ), 12, -15 );
+		// Save and decode.
+		$content = $dom->saveHTML();
+		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
 	}
