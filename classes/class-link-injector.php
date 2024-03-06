@@ -164,16 +164,55 @@ class Mai_Link_Injector {
 					break;
 				}
 
-				// Loop through all the instances of the keyword in the node. This is needed because a paragraph can have multiple instances of the keyword. `htmlspecialchars()` added because "&" in content threw errors.
+				/**
+				 * Loop through all the instances of the keyword in the node.
+				 * This is needed because a paragraph can have multiple instances of the keyword.
+				 * Added `htmlspecialchars()` because `&` in content threw errors.
+				 */
 				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url, &$count ) {
 					// Check if we're over the limit.
 					if ( $this->limit && $count > $this->limit ) {
 						// Return the original matched string without replacement.
 						return $matches[0];
 					} else {
+						// Increment count.
 						$count++;
-						// Return the new link.
-						return sprintf('<a href="%s">%s</a>', esc_url( $url ), htmlspecialchars( $matches[1] ) );
+
+						// Set the new text.
+						$text = $matches[1];
+
+						// Build attr.
+						$attr = [
+							'href' => esc_url( $url ),
+						];
+
+						// If external link, add target _blank and rel noopener.
+						if ( parse_url( esc_url( $url ), PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
+							$attr['target'] = '_blank';
+							$attr['rel']    = 'noopener';
+						}
+
+						/**
+						 * Allow filtering of the link attributes.
+						 *
+						 * @param array  $attr The link attributes.
+						 * @param string $url  The link URL.
+						 * @param string $text The link text.
+						 *
+						 * @return array
+						 */
+						$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
+
+						// Atts string.
+						$attributes = '';
+
+						// Loop through and add attr.
+						foreach ( $attr as $key => $value ) {
+							$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
+						}
+
+						// Return the replaced string.
+						return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
 					}
 				}, htmlspecialchars( $node->nodeValue ) );
 
