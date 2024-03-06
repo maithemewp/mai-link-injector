@@ -114,8 +114,8 @@ class Mai_Link_Injector {
 		$xpath = new DOMXPath( $dom );
 
 		foreach ( $this->links as $keywords => $url ) {
-			$query   = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
-			$invalid = [
+			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
+			$invalid    = [
 				'h1',
 				'h2',
 				'h3',
@@ -132,36 +132,55 @@ class Mai_Link_Injector {
 				'submit',
 				'textarea',
 			];
+
+			// Filter and sanitize.
 			$invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );
 			$invalid = array_map( 'sanitize_key', $invalid );
 			$invalid = array_unique( $invalid );
 
+			// Add invalid tags to the expression.
 			foreach ( $invalid as $tag ) {
-				$query .= sprintf( ' and not(ancestor::%s)', $tag );
+				$expression .= sprintf( ' and not(ancestor::%s)', $tag );
 			}
 
-			$query .= ']';
+			// Close the expression.
+			$expression .= ']';
 
-			$search = $xpath->query( $query );
+			// Run query.
+			$query = $xpath->query( $expression );
 
-			if ( ! $search->length ) {
+			// Bail if no results.
+			if ( ! $query->length ) {
 				continue;
 			}
 
+			// Start count.
 			$count = 1;
 
-			foreach ( $search as $node ) {
+			// Loop through query.
+			foreach ( $query as $node ) {
 				// Bail if over limit.
 				if ( $this->limit && $count > $this->limit ) {
 					break;
 				}
 
-				$link     = sprintf( '<a href="%s">%s</a>', esc_url( $url ), wp_kses_post( $keywords ) );
-				$replaced = preg_replace( "/\b({$keywords})\b/i", sprintf( '<a href="%s">', esc_url( $url ) ) . "$1" . '</a>', htmlspecialchars( $node->nodeValue ) ); // `htmlspecialchars()` added because "&" in content threw errors.
+				// Loop through all the instances of the keyword in the node. This is needed because a paragraph can have multiple instances of the keyword. `htmlspecialchars()` added because "&" in content threw errors.
+				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url, &$count ) {
+					// Check if we're over the limit.
+					if ( $this->limit && $count > $this->limit ) {
+						// Return the original matched string without replacement.
+						return $matches[0];
+					} else {
+						$count++;
+						// Return the new link.
+						return sprintf('<a href="%s">%s</a>', esc_url( $url ), htmlspecialchars( $matches[1] ) );
+					}
+				}, htmlspecialchars( $node->nodeValue ) );
+
+				// Replace.
 				$fragment = $dom->createDocumentFragment();
 				$fragment->appendXml( $replaced );
 				$node->parentNode->replaceChild( $fragment, $node );
-				$count++;
 			}
 		}
 
