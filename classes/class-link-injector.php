@@ -125,6 +125,8 @@ class Mai_Link_Injector {
 				'a',
 				'blockquote',
 				'button',
+				'figcaption',
+				'figure',
 				'input',
 				'select',
 				'submit',
