@@ -87,15 +87,23 @@ class Mai_Link_Injector {
 		// Modify state.
 		$libxml_previous_state = libxml_use_internal_errors( true );
 
-		// Encode. Can't use `mb_convert_encoding()` because it's deprecated in PHP 8.2.
-		// @link https://stackoverflow.com/questions/8218230/php-domdocument-loadhtml-not-encoding-utf-8-correctly
+		// Encode.
 		$content = mb_encode_numericentity( $content, [0x80, 0x10FFFF, 0, ~0], 'UTF-8' );
 
 		// Load the content in the document HTML.
-		$dom->loadHTML( $content );
+		$dom->loadHTML( "<div>$content</div>" );
 
-		// Remove <!DOCTYPE.
-		$dom->removeChild( $dom->doctype );
+		// Handle wraps.
+		$container = $dom->getElementsByTagName('div')->item(0);
+		$container = $container->parentNode->removeChild( $container );
+
+		while ( $dom->firstChild ) {
+			$dom->removeChild( $dom->firstChild );
+		}
+
+		while ( $container->firstChild ) {
+			$dom->appendChild( $container->firstChild );
+		}
 
 		// Handle errors.
 		libxml_clear_errors();
@@ -106,8 +114,8 @@ class Mai_Link_Injector {
 		$xpath = new DOMXPath( $dom );
 
 		foreach ( $this->links as $keywords => $url ) {
-			$query   = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
-			$invalid = [
+			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
+			$invalid    = [
 				'h1',
 				'h2',
 				'h3',
@@ -117,46 +125,107 @@ class Mai_Link_Injector {
 				'a',
 				'blockquote',
 				'button',
+				'figcaption',
+				'figure',
 				'input',
 				'select',
 				'submit',
 				'textarea',
 			];
+
+			// Filter and sanitize.
 			$invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );
 			$invalid = array_map( 'sanitize_key', $invalid );
 			$invalid = array_unique( $invalid );
 
+			// Add invalid tags to the expression.
 			foreach ( $invalid as $tag ) {
-				$query .= sprintf( ' and not(ancestor::%s)', $tag );
+				$expression .= sprintf( ' and not(ancestor::%s)', $tag );
 			}
 
-			$query .= ']';
+			// Close the expression.
+			$expression .= ']';
 
-			$search = $xpath->query( $query );
+			// Run query.
+			$query = $xpath->query( $expression );
 
-			if ( ! $search->length ) {
+			// Bail if no results.
+			if ( ! $query->length ) {
 				continue;
 			}
 
+			// Start count.
 			$count = 1;
 
-			foreach ( $search as $node ) {
+			// Loop through query.
+			foreach ( $query as $node ) {
 				// Bail if over limit.
 				if ( $this->limit && $count > $this->limit ) {
 					break;
 				}
 
-				$link     = sprintf( '<a href="%s">%s</a>', esc_url( $url ), wp_kses_post( $keywords ) );
-				$replaced = preg_replace( "/\b({$keywords})\b/i", sprintf( '<a href="%s">', esc_url( $url ) ) . "$1" . '</a>', htmlspecialchars( $node->nodeValue ) ); // `htmlspecialchars()` added because "&" in content threw errors.
+				/**
+				 * Replace the first insance of the keyword with a link.
+				 * Limited to 1 via the last param of `preg_replace_callback()`.
+				 * Added `htmlspecialchars()` because `&` in content threw errors.
+				 */
+				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url, &$count ) {
+					// Bail if no matches.
+					if ( ! isset( $matches[1] ) ) {
+						return $matches[0];
+					}
+
+					// Set the new text.
+					$text = $matches[1];
+
+					// Build attr.
+					$attr = [
+						'href' => esc_url( $url ),
+					];
+
+					// If external link, add target _blank and rel noopener.
+					if ( parse_url( esc_url( $url ), PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
+						$attr['target'] = '_blank';
+						$attr['rel']    = 'noopener';
+					}
+
+					/**
+					 * Allow filtering of the link attributes.
+					 *
+					 * @param array  $attr The link attributes.
+					 * @param string $url  The link URL.
+					 * @param string $text The link text.
+					 *
+					 * @return array
+					 */
+					$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
+
+					// Atts string.
+					$attributes = '';
+
+					// Loop through and add attr.
+					foreach ( $attr as $key => $value ) {
+						$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
+					}
+
+					// Return the replaced string.
+					return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+
+				}, htmlspecialchars( $node->nodeValue ), 1 );
+
+				// Replace.
 				$fragment = $dom->createDocumentFragment();
 				$fragment->appendXml( $replaced );
 				$node->parentNode->replaceChild( $fragment, $node );
+
+				// Increment count.
 				$count++;
 			}
 		}
 
-		// Save new HTML without html/body wrap.
-		$content = substr( $dom->saveHTML( $dom->documentElement ), 12, -15 );
+		// Save and decode.
+		$content = $dom->saveHTML();
+		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
 	}
