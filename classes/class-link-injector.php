@@ -111,9 +111,11 @@ class Mai_Link_Injector {
 		// Restore.
 		libxml_use_internal_errors( $libxml_previous_state );
 
+		// Create xpath.
 		$xpath = new DOMXPath( $dom );
 
 		foreach ( $this->links as $keywords => $url ) {
+			$keywords   = htmlspecialchars( $keywords );
 			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
 			$invalid    = [
 				'h1',
@@ -139,8 +141,10 @@ class Mai_Link_Injector {
 			$invalid = array_unique( $invalid );
 
 			// Add invalid tags to the expression.
-			foreach ( $invalid as $tag ) {
-				$expression .= sprintf( ' and not(ancestor::%s)', $tag );
+			if ( $invalid ) {
+				$expression .= ' and not(' . implode(' | ', array_map( function( $element ) {
+					return 'ancestor::' . $element;
+				}, $invalid ) ) . ')';
 			}
 
 			// Close the expression.
@@ -154,64 +158,55 @@ class Mai_Link_Injector {
 				continue;
 			}
 
+			// Set totals.
+			$total = 0;
+
+			// Loop through query.
+			foreach ( $query as $node ) {
+				// Add `htmlspecialchars()` because `&` in content threw errors.
+				$node->nodeValue = htmlspecialchars( $node->nodeValue );
+
+				// Add out how many times the keyword appears in the nodeValue.
+				// $total += substr_count( $this->strtolower( $node->nodeValue ), $keywords );
+				$total += 1;
+			}
+
+			// By default, no indexes.
+			$indexes = false;
+
+			// If total is over our limit.
+			if ( $this->limit && $total > $this->limit ) {
+				$indexes = $this->get_indexes( $total, $this->limit );
+			}
+
 			// Start count.
 			$count = 1;
 
 			// Loop through query.
-			foreach ( $query as $node ) {
+			foreach ( $query as $index => $node ) {
 				// Bail if over limit.
 				if ( $this->limit && $count > $this->limit ) {
 					break;
 				}
 
-				/**
-				 * Replace the first insance of the keyword with a link.
-				 * Limited to 1 via the last param of `preg_replace_callback()`.
-				 * Added `htmlspecialchars()` because `&` in content threw errors.
-				 */
-				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url, &$count ) {
+				// If set amount of indexes, check if we're replacing this one.
+				if ( $indexes && ! isset( $indexes[ $index ] ) ) {
+					// $index++;
+					continue;
+				}
+
+				// ray( 'Index: ' . $index, 'Count: ' . $count );
+
+				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url ) {
 					// Bail if no matches.
 					if ( ! isset( $matches[1] ) ) {
 						return $matches[0];
 					}
 
-					// Set the new text.
-					$text = $matches[1];
-
-					// Build attr.
-					$attr = [
-						'href' => esc_url( $url ),
-					];
-
-					// If external link, add target _blank and rel noopener.
-					if ( parse_url( esc_url( $url ), PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
-						$attr['target'] = '_blank';
-						$attr['rel']    = 'noopener';
-					}
-
-					/**
-					 * Allow filtering of the link attributes.
-					 *
-					 * @param array  $attr The link attributes.
-					 * @param string $url  The link URL.
-					 * @param string $text The link text.
-					 *
-					 * @return array
-					 */
-					$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
-
-					// Atts string.
-					$attributes = '';
-
-					// Loop through and add attr.
-					foreach ( $attr as $key => $value ) {
-						$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
-					}
-
 					// Return the replaced string.
-					return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+					return $this->get_replacement( $url, $matches[1] );
 
-				}, htmlspecialchars( $node->nodeValue ), 1 );
+				}, $node->nodeValue, 1 );
 
 				// Replace.
 				$fragment = $dom->createDocumentFragment();
@@ -225,9 +220,74 @@ class Mai_Link_Injector {
 
 		// Save and decode.
 		$content = $dom->saveHTML();
+		$content = htmlspecialchars_decode( $content );
 		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
+	}
+
+	/**
+	 * Get indexes for the limit.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @return array
+	 */
+	function get_indexes( $total, $limit ) {
+		$indexes = [];
+		$step    = (int) ceil( $total / $limit );
+
+		// Loop through the limit amount.
+		for ( $i = 0; $i < $limit; $i++ ) {
+			$indexes[] = (int) $i * $step;
+		}
+
+		return array_flip( $indexes );
+	}
+
+	/**
+	 * Get the replacement string.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @return string
+	 */
+	function get_replacement( $url, $text ) {
+		// Escape.
+		$url = esc_url( $url );
+
+		// Build attr.
+		$attr = [
+			'href' => $url,
+		];
+
+		// If external link, add target _blank and rel noopener.
+		if ( parse_url( $url, PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
+			$attr['target'] = '_blank';
+			$attr['rel']    = 'noopener';
+		}
+
+		/**
+		 * Allow filtering of the link attributes.
+		 *
+		 * @param array  $attr The link attributes.
+		 * @param string $url  The link URL.
+		 * @param string $text The link text.
+		 *
+		 * @return array
+		 */
+		$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
+
+		// Atts string.
+		$attributes = '';
+
+		// Loop through and add attr.
+		foreach ( $attr as $key => $value ) {
+			$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
+		}
+
+		// Return the replaced string.
+		return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
 	}
 
 	/**
