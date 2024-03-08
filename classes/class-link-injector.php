@@ -235,7 +235,7 @@ class Mai_Link_Injector {
 	 */
 	function get_indexes( $total, $limit ) {
 		$indexes = [];
-		$step    = (int) ceil( $total / $limit );
+		$step    = (int) floor( $total / $limit );
 
 		// Loop through the limit amount.
 		for ( $i = 0; $i < $limit; $i++ ) {
