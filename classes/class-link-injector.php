@@ -114,7 +114,20 @@ class Mai_Link_Injector {
 		// Create xpath.
 		$xpath = new DOMXPath( $dom );
 
+		// Get current url.
+		$current_url = $this->get_compare_url( home_url( add_query_arg( [] ) ) );
+
+		// Loop through links.
 		foreach ( $this->links as $keywords => $url ) {
+			// Get compare url.
+			$link_url = $this->get_compare_url( $url );
+
+			// Skip if current url is the link url.
+			if ( $current_url === $link_url ) {
+				continue;
+			}
+
+			// Set vars.
 			$keywords   = htmlspecialchars( $keywords );
 			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
 			$invalid    = [
@@ -223,6 +236,28 @@ class Mai_Link_Injector {
 		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
+	}
+
+	/**
+	 * Get the compare url.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @return string
+	 */
+	function get_compare_url( $url ) {
+		// Parse the url.
+		$parsed = wp_parse_url( $url );
+
+		// Bail if no host or path.
+		if ( ! ( isset( $parsed['host'] ) && $parsed['host'] && isset( $parsed['path'] ) ) ) {
+			return $url;
+		}
+
+		// Remove www.
+		$parsed['host'] = str_replace( 'www.', '', $parsed['host'] );
+
+		return $parsed['host'] . $parsed['path'];
 	}
 
 	/**
