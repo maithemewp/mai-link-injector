@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 (3/8/24)
+* Changed: Only the first link in a single element is counted.
+* Changed: The links are now spread out among the total instances of the keywords.
+
 ## 1.3.0 (3/7/24)
 * Changed: Offsite links are now opened in a new tab. Added new `mai_link_injector_link_attributes` filter to override link attributes.
 * Changed: Links are now ignored when inside of `<figure>` and `<figurecaption>` elements.

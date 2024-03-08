@@ -195,8 +195,7 @@ class Mai_Link_Injector {
 					continue;
 				}
 
-				// ray( 'Index: ' . $index, 'Count: ' . $count );
-
+				// Replace the first instance of the keyword.
 				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url ) {
 					// Bail if no matches.
 					if ( ! isset( $matches[1] ) ) {
