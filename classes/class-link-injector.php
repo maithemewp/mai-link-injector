@@ -221,8 +221,8 @@ class Mai_Link_Injector {
 
 				// If we hav a max and the instances plus the injected links will be over our max.
 				if ( $this->max && ( $instances + $injected ) > $this->max ) {
-					// Set limit on this keyword to the max minus the injected.
-					$limit = $this->max - $injected;
+					// Set limit on this keyword to the max minus the injected, if it's less than the limit.
+					$limit = min( $this->max - $injected, $limit );
 				}
 
 				// Get indexes.
