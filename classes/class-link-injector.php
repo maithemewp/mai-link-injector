@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class Mai_Link_Injector {
 	protected $links; // Assocative array of 'the keyword string' => 'https://theurl.com'.
+	protected $max; // Don't inject more than this number of links. Use 0 for no limit.
 	protected $limit; // Don't link more than this number of items. Use 0 for no limit.
 
 	/**
@@ -15,17 +16,35 @@ class Mai_Link_Injector {
 	 *
 	 * @since 0.1.0
 	 *
+	 * @param array $links The links to inject.
+	 *
 	 * @return void
 	 */
 	function __construct( array $links ) {
 		$this->links = $this->sanitize( $links );
+		$this->max   = 0;
 		$this->limit = 0;
+	}
+
+	/**
+	 * Set max number of links.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $max The max number of links.
+	 *
+	 * @return int
+	 */
+	function set_max( $max ) {
+		$this->max = absint( $max );
 	}
 
 	/**
 	 * Set link limit per item.
 	 *
 	 * @since 0.1.0
+	 *
+	 * @param int $limit The link limit per item.
 	 *
 	 * @return int
 	 */
@@ -59,16 +78,24 @@ class Mai_Link_Injector {
 		$sanitized = [];
 
 		foreach ( $links as $text => $url ) {
-			$sanitized[ wp_kses_post( $this->strtolower( $text ) ) ] = esc_url( $url );
+			// Sanitize.
+			$text = sanitize_text_field( $text );
+			$text = $this->convert_quotes( $text );
+			$text = $this->strtolower( $text );
+			$url  = esc_url( $url );
+
+			$sanitized[ $text ] = $url;
 		}
 
-		return array_filter( $sanitized );
+		return array_unique( array_filter( $sanitized ) );
 	}
 
 	/**
 	 * Adds links to matching text in content.
 	 *
 	 * @since 0.1.0
+	 *
+	 * @param string $content The content.
 	 *
 	 * @return string
 	 */
@@ -117,6 +144,9 @@ class Mai_Link_Injector {
 		// Get current url.
 		$current_url = $this->get_compare_url( home_url( add_query_arg( [] ) ) );
 
+		// Set number of injected links.
+		$injected = 0;
+
 		// Loop through links.
 		foreach ( $this->links as $keywords => $url ) {
 			// Get compare url.
@@ -127,8 +157,7 @@ class Mai_Link_Injector {
 				continue;
 			}
 
-			// Set vars.
-			$keywords   = htmlspecialchars( $keywords );
+			// Create the expression and set invalid elements.
 			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
 			$invalid    = [
 				'h1',
@@ -171,25 +200,33 @@ class Mai_Link_Injector {
 				continue;
 			}
 
-			// Set totals.
-			$total = 0;
+			// Set total instances.
+			$instances = 0;
 
 			// Loop through query.
 			foreach ( $query as $node ) {
-				// Add `htmlspecialchars()` because `&` in content threw errors.
-				$node->nodeValue = htmlspecialchars( $node->nodeValue );
+				// Convert quotes to curly.
+				$node->nodeValue = $this->convert_quotes( $node->nodeValue );
 
-				// Add out how many times the keyword appears in the nodeValue.
-				// $total += substr_count( $this->strtolower( $node->nodeValue ), $keywords );
-				$total += 1;
+				// Add out how many times the keyword appears in a node.
+				$instances++;
 			}
 
 			// By default, no indexes.
 			$indexes = false;
 
-			// If total is over our limit.
-			if ( $this->limit && $total > $this->limit ) {
-				$indexes = $this->get_indexes( $total, $this->limit );
+			// If we have a limit and the number of instances is over our limit.
+			if ( $this->limit && $instances > $this->limit ) {
+				$limit = $this->limit;
+
+				// If we hav a max and the instances plus the injected links will be over our max.
+				if ( $this->max && ( $instances + $injected ) > $this->max ) {
+					// Set limit on this keyword to the max minus the injected.
+					$limit = $this->max - $injected;
+				}
+
+				// Get indexes.
+				$indexes = $this->get_indexes( $instances, $limit );
 			}
 
 			// Start count.
@@ -197,6 +234,11 @@ class Mai_Link_Injector {
 
 			// Loop through query.
 			foreach ( $query as $index => $node ) {
+				// Bail if we hit the max.
+				if ( $this->max && $injected > $this->max ) {
+					break;
+				}
+
 				// Bail if over limit.
 				if ( $this->limit && $count > $this->limit ) {
 					break;
@@ -225,8 +267,9 @@ class Mai_Link_Injector {
 				$fragment->appendXml( $replaced );
 				$node->parentNode->replaceChild( $fragment, $node );
 
-				// Increment count.
+				// Increment counts.
 				$count++;
+				$injected++;
 			}
 		}
 
@@ -242,6 +285,8 @@ class Mai_Link_Injector {
 	 * Get the compare url.
 	 *
 	 * @since 1.4.0
+	 *
+	 * @param string $url The link URL.
 	 *
 	 * @return string
 	 */
@@ -265,11 +310,14 @@ class Mai_Link_Injector {
 	 *
 	 * @since 1.4.0
 	 *
+	 * @param int $instances The total number of instances.
+	 * @param int $limit     The limit.
+	 *
 	 * @return array
 	 */
-	function get_indexes( $total, $limit ) {
+	function get_indexes( $instances, $limit ) {
 		$indexes = [];
-		$step    = (int) floor( $total / $limit );
+		$step    = (int) floor( $instances / $limit );
 
 		// Loop through the limit amount.
 		for ( $i = 0; $i < $limit; $i++ ) {
@@ -283,6 +331,9 @@ class Mai_Link_Injector {
 	 * Get the replacement string.
 	 *
 	 * @since 1.4.0
+	 *
+	 * @param string $url  The link URL.
+	 * @param string $text The link text.
 	 *
 	 * @return string
 	 */
@@ -322,6 +373,23 @@ class Mai_Link_Injector {
 
 		// Return the replaced string.
 		return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+	}
+
+	/**
+	 * Convert quotes to curly quotes.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $string The string to convert.
+	 *
+	 * @return string
+	 */
+	function convert_quotes( $string ) {
+		$string = htmlspecialchars_decode( $string ); // Decode entities like single quotes to actual single quotes.
+		$string = wptexturize( $string ); // Convert straight quotes to curly, this also encodes again.
+		$string = html_entity_decode( $string, ENT_QUOTES, 'UTF-8' ); // Decode to curly quotes.
+
+		return $string;
 	}
 
 	/**

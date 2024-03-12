@@ -27,6 +27,7 @@ class Mai_Link_Injector_Settings {
 		add_action( 'acf/init',                         [ $this, 'register' ] );
 		add_action( 'acf/render_field/key=maili_limit', [ $this, 'admin_css' ] );
 		add_filter( 'acf/load_field/key=maili_singles', [ $this, 'load_singles' ] );
+		add_filter( 'acf/load_field/key=maili_max',     [ $this, 'load_max' ] );
 		add_filter( 'acf/load_field/key=maili_limit',   [ $this, 'load_limit' ] );
 		add_filter( 'acf/load_field/key=maili_links',   [ $this, 'load_links' ] );
 		add_action( 'acf/save_post',                    [ $this, 'save' ], 99 );
@@ -78,7 +79,15 @@ class Mai_Link_Injector_Settings {
 						'ajax'          => 1,
 					],
 					[
-						'label'         => __( 'Limit', 'mai-link-injector' ),
+						'label'         => __( 'Total link limit', 'mai-link-injector' ),
+						'instructions'  => __( 'Set the maximum amount of injected links on a page. Use 0 for no limit.', 'mai-link-injector' ),
+						'key'           => 'maili_max',
+						'name'          => 'max',
+						'type'          => 'number',
+						'default_value' => maili_get_option_default( 'max' ),
+					],
+					[
+						'label'         => __( 'Keyword link limit', 'mai-link-injector' ),
 						'instructions'  => __( 'Optionally limit the amount of instances specific keywords gets linked per-page. Use 0 for no limit.', 'mai-link-injector' ),
 						'key'           => 'maili_limit',
 						'name'          => 'limit',
@@ -188,6 +197,20 @@ class Mai_Link_Injector_Settings {
 	}
 
 	/**
+	 * Loads max field value from our custom option.
+	 *
+	 * @since TBD
+	 *
+	 * @param array $field The field data.
+	 *
+	 * @return array
+	 */
+	function load_max( $field ) {
+		$field['value'] = maili_get_option( 'max' );
+		return $field;
+	}
+
+	/**
 	 * Loads limit field value from our custom option.
 	 *
 	 * @since 1.1.0
@@ -263,6 +286,7 @@ class Mai_Link_Injector_Settings {
 		// Set data var.
 		$data  = [
 			'singles' => (array) get_field( 'maili_singles', 'option' ),
+			'max'     => (int) get_field( 'maili_max', 'option' ),
 			'limit'   => (int) get_field( 'maili_limit', 'option' ),
 			'links'   => [],
 		];
@@ -293,10 +317,12 @@ class Mai_Link_Injector_Settings {
 		$options = [
 			'options_links',
 			'options_maili_singles',
+			'options_maili_max',
 			'options_maili_limit',
 			'options_maili_links',
 			'_options_links',
 			'_options_maili_singles',
+			'_options_maili_max',
 			'_options_maili_limit',
 			'_options_maili_links',
 		];
