@@ -343,7 +343,8 @@ class Mai_Link_Injector {
 
 		// Build attr.
 		$attr = [
-			'href' => $url,
+			'href'  => $url,
+			'class' => 'mai-link-injected',
 		];
 
 		// If external link, add target _blank and rel noopener.
