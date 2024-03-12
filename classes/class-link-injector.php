@@ -225,8 +225,10 @@ class Mai_Link_Injector {
 					$limit = min( $this->max - $injected, $limit );
 				}
 
-				// Get indexes.
-				$indexes = $this->get_indexes( $instances, $limit );
+				// If we still have a limit, get indexes.
+				if ( $limit ) {
+					$indexes = $this->get_indexes( $instances, $limit );
+				}
 			}
 
 			// Start count.
