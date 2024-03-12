@@ -87,7 +87,7 @@ class Mai_Link_Injector {
 			$sanitized[ $text ] = $url;
 		}
 
-		return array_unique( array_filter( $sanitized ) );
+		return array_filter( $sanitized );
 	}
 
 	/**
@@ -235,8 +235,9 @@ class Mai_Link_Injector {
 			// Loop through query.
 			foreach ( $query as $index => $node ) {
 				// Bail if we hit the max.
-				if ( $this->max && $injected > $this->max ) {
-					break;
+				if ( $this->max && $injected >= $this->max ) {
+					// Break out of both loops.
+					break 2;
 				}
 
 				// Bail if over limit.
