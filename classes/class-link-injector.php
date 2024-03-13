@@ -175,7 +175,7 @@ class Mai_Link_Injector {
 				'select',
 				'submit',
 				'textarea',
-				'*[contains(concat(" ", @class, " "), " mai-link-injector-exclude ")]',
+				'*[contains(concat(" ", @class, " "), " mai-link-exclude ")]',
 			];
 
 			// Filter and sanitize.
