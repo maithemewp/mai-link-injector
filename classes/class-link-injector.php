@@ -175,11 +175,12 @@ class Mai_Link_Injector {
 				'select',
 				'submit',
 				'textarea',
+				'*[contains(concat(" ", @class, " "), " mai-link-injector-exclude ")]',
 			];
 
 			// Filter and sanitize.
 			$invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );
-			$invalid = array_map( 'sanitize_key', $invalid );
+			$invalid = array_map( 'sanitize_text_field', $invalid );
 			$invalid = array_unique( $invalid );
 
 			// Add invalid tags to the expression.
