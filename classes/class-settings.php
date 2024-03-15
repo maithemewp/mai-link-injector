@@ -208,7 +208,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Loads max field value from our custom option.
 	 *
-	 * @since TBD
+	 * @since 1.4.0
 	 *
 	 * @param array $field The field data.
 	 *
@@ -222,7 +222,7 @@ class Mai_Link_Injector_Settings {
 	/**
 	 * Loads element limit field value from our custom option.
 	 *
-	 * @since TBD
+	 * @since 1.4.0
 	 *
 	 * @param array $field The field data.
 	 *

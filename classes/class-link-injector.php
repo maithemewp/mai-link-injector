@@ -31,7 +31,7 @@ class Mai_Link_Injector {
 	/**
 	 * Set max number of links.
 	 *
-	 * @since TBD
+	 * @since 1.4.0
 	 *
 	 * @param int $limit The max number of links.
 	 *
@@ -44,7 +44,7 @@ class Mai_Link_Injector {
 	/**
 	 * Set max number of links per element.
 	 *
-	 * @since TBD
+	 * @since 1.4.0
 	 *
 	 * @param int $limit The max number of links per element.
 	 *
@@ -432,7 +432,7 @@ class Mai_Link_Injector {
 	/**
 	 * Convert quotes to curly quotes.
 	 *
-	 * @since TBD
+	 * @since 1.4.0
 	 *
 	 * @param string $string The string to convert.
 	 *
