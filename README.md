@@ -112,6 +112,8 @@ select
 submit
 textarea
 ```
+Elements with a `mai-link-exclude` class will ignore keyword matches.
+
 If you'd like to add or remove these elements, the following filter is available:
 ```
 $invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );

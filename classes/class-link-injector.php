@@ -8,7 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class Mai_Link_Injector {
 	protected $links; // Assocative array of 'the keyword string' => 'https://theurl.com'.
-	protected $max; // Don't inject more than this number of links. Use 0 for no limit.
+	protected $limit_max; // Don't inject more than this number of links. Use 0 for no limit.
+	protected $limit_el; // Don't inject more than this number of links per element. Use 0 for no limit.
 	protected $limit; // Don't link more than this number of items. Use 0 for no limit.
 
 	/**
@@ -21,9 +22,10 @@ class Mai_Link_Injector {
 	 * @return void
 	 */
 	function __construct( array $links ) {
-		$this->links = $this->sanitize( $links );
-		$this->max   = 0;
-		$this->limit = 0;
+		$this->links     = $this->sanitize( $links );
+		$this->limit_max = 0;
+		$this->limit_el  = 0;
+		$this->limit     = 0;
 	}
 
 	/**
@@ -31,12 +33,25 @@ class Mai_Link_Injector {
 	 *
 	 * @since TBD
 	 *
-	 * @param int $max The max number of links.
+	 * @param int $limit The max number of links.
 	 *
 	 * @return int
 	 */
-	function set_max( $max ) {
-		$this->max = absint( $max );
+	function set_limit_max( $limit ) {
+		$this->limit_max = absint( $limit );
+	}
+
+	/**
+	 * Set max number of links per element.
+	 *
+	 * @since TBD
+	 *
+	 * @param int $limit The max number of links per element.
+	 *
+	 * @return int
+	 */
+	function set_limit_el( $limit ) {
+		$this->limit_el = absint( $limit );
 	}
 
 	/**
@@ -144,7 +159,7 @@ class Mai_Link_Injector {
 		// Get current url.
 		$current_url = $this->get_compare_url( home_url( add_query_arg( [] ) ) );
 
-		// Set number of injected links.
+		// Set the number of injected links.
 		$injected = 0;
 
 		// Loop through links.
@@ -194,10 +209,10 @@ class Mai_Link_Injector {
 			$expression .= ']';
 
 			// Run query.
-			$query = $xpath->query( $expression );
+			$results = $xpath->query( $expression );
 
 			// Bail if no results.
-			if ( ! $query->length ) {
+			if ( ! $results->length ) {
 				continue;
 			}
 
@@ -205,7 +220,7 @@ class Mai_Link_Injector {
 			$instances = 0;
 
 			// Loop through query.
-			foreach ( $query as $node ) {
+			foreach ( $results as $node ) {
 				// Convert quotes to curly.
 				$node->nodeValue = $this->convert_quotes( $node->nodeValue );
 
@@ -221,9 +236,9 @@ class Mai_Link_Injector {
 				$limit = $this->limit;
 
 				// If we hav a max and the instances plus the injected links will be over our max.
-				if ( $this->max && ( $instances + $injected ) > $this->max ) {
+				if ( $this->limit_max && ( $instances + $injected ) > $this->limit_max ) {
 					// Set limit on this keyword to the max minus the injected, if it's less than the limit.
-					$limit = min( $this->max - $injected, $limit );
+					$limit = min( $this->limit_max - $injected, $limit );
 				}
 
 				// If we still have a limit, get indexes.
@@ -236,9 +251,9 @@ class Mai_Link_Injector {
 			$count = 1;
 
 			// Loop through query.
-			foreach ( $query as $index => $node ) {
+			foreach ( $results as $index => $node ) {
 				// Bail if we hit the max.
-				if ( $this->max && $injected >= $this->max ) {
+				if ( $this->limit_max && $injected >= $this->limit_max ) {
 					// Break out of both loops.
 					break 2;
 				}
@@ -248,10 +263,26 @@ class Mai_Link_Injector {
 					break;
 				}
 
-				// If set amount of indexes, check if we're replacing this one.
+				// Skip if we have a set amount of indexes and this is not one we're replacing.
 				if ( $indexes && ! isset( $indexes[ $index ] ) ) {
-					// $index++;
 					continue;
+				}
+
+				// If checking element limit.
+				if ( $this->limit_el ) {
+					// Get parent.
+					$parent = $this->get_parent( $node );
+
+					// If we have a parent node.
+					if ( $parent ) {
+						// Query for links with mai-link-injected class.
+						$links = $xpath->query( './/a[@class="mai-link-injected"]', $parent );
+
+						// Skip if the parent node already has N links.
+						if ( $links->length >= $this->limit_el ) {
+							continue;
+						}
+					}
 				}
 
 				// Replace the first instance of the keyword.
@@ -283,6 +314,24 @@ class Mai_Link_Injector {
 		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
+	}
+
+	/**
+	 * Get the parent node.
+	 * Skip <span>, <strong>, and <em>.
+	 *
+	 * @param object $node
+	 *
+	 * @return mixed
+	 */
+	function get_parent( $node ) {
+		// If null, or a dom element that's not a span, strong, or em, return it.
+		if ( is_null( $node ) || ( $node instanceof DOMElement && ! in_array( $node->tagName, [ 'span', 'strong', 'em' ] ) ) ) {
+			return $node;
+		}
+
+		// Move up.
+		return $this->get_parent( $node->parentNode );
 	}
 
 	/**
