@@ -235,7 +235,7 @@ class Mai_Link_Injector {
 			if ( $this->limit && $instances > $this->limit ) {
 				$limit = $this->limit;
 
-				// If we hav a max and the instances plus the injected links will be over our max.
+				// If we have a max and the instances plus the injected links will be over our max.
 				if ( $this->limit_max && ( $instances + $injected ) > $this->limit_max ) {
 					// Set limit on this keyword to the max minus the injected, if it's less than the limit.
 					$limit = min( $this->limit_max - $injected, $limit );
@@ -275,8 +275,9 @@ class Mai_Link_Injector {
 
 					// If we have a parent node.
 					if ( $parent ) {
-						// Query for links with mai-link-injected class.
-						$links = $xpath->query( './/a[@class="mai-link-injected"]', $parent );
+						// Query for links.
+						// $links = $xpath->query( './/a[@class="mai-link-injected"]', $parent );
+						$links = $xpath->query( './/a', $parent );
 
 						// Skip if the parent node already has N links.
 						if ( $links->length >= $this->limit_el ) {

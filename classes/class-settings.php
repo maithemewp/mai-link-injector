@@ -89,7 +89,7 @@ class Mai_Link_Injector_Settings {
 					],
 					[
 						'label'         => __( 'Element link limit', 'mai-link-injector' ),
-						'instructions'  => __( 'Set the maximum amount of injected links per element. Use 0 for no limit.', 'mai-link-injector' ),
+						'instructions'  => __( 'Set the maximum amount of links per element. Use 0 for no limit.', 'mai-link-injector' ),
 						'key'           => 'maili_limit_el',
 						'name'          => 'limit_el',
 						'type'          => 'number',
