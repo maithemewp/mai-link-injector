@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0 (3/8/24)
+## 1.4.0 (4/3/24)
 * Added: New "Total link limit" setting to limit the total amount of injected links allowed on a page.
 * Changed: Only the first link in a single element is counted.
 * Changed: The links are now spread out among the total instances of the keywords.
