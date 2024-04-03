@@ -24,12 +24,14 @@ class Mai_Link_Injector_Settings {
 	 * @return void
 	 */
 	function hooks() {
-		add_action( 'acf/init',                         [ $this, 'register' ] );
-		add_action( 'acf/render_field/key=maili_limit', [ $this, 'admin_css' ] );
-		add_filter( 'acf/load_field/key=maili_singles', [ $this, 'load_singles' ] );
-		add_filter( 'acf/load_field/key=maili_limit',   [ $this, 'load_limit' ] );
-		add_filter( 'acf/load_field/key=maili_links',   [ $this, 'load_links' ] );
-		add_action( 'acf/save_post',                    [ $this, 'save' ], 99 );
+		add_action( 'acf/init',                           [ $this, 'register' ] );
+		add_action( 'acf/render_field/key=maili_limit',   [ $this, 'admin_css' ] );
+		add_filter( 'acf/load_field/key=maili_singles',   [ $this, 'load_singles' ] );
+		add_filter( 'acf/load_field/key=maili_limit_max', [ $this, 'load_limit_max' ] );
+		add_filter( 'acf/load_field/key=maili_limit_el',  [ $this, 'load_limit_el' ] );
+		add_filter( 'acf/load_field/key=maili_limit',     [ $this, 'load_limit' ] );
+		add_filter( 'acf/load_field/key=maili_links',     [ $this, 'load_links' ] );
+		add_action( 'acf/save_post',                      [ $this, 'save' ], 99 );
 		add_filter( 'plugin_action_links_mai-link-injector/mai-link-injector.php', [ $this, 'add_settings_link' ], 10, 4 );
 	}
 
@@ -78,7 +80,23 @@ class Mai_Link_Injector_Settings {
 						'ajax'          => 1,
 					],
 					[
-						'label'         => __( 'Limit', 'mai-link-injector' ),
+						'label'         => __( 'Total link limit', 'mai-link-injector' ),
+						'instructions'  => __( 'Set the maximum amount of injected links on a page. Use 0 for no limit.', 'mai-link-injector' ),
+						'key'           => 'maili_limit_max',
+						'name'          => 'limit_max',
+						'type'          => 'number',
+						'default_value' => maili_get_option_default( 'limit_max' ),
+					],
+					[
+						'label'         => __( 'Element link limit', 'mai-link-injector' ),
+						'instructions'  => __( 'Set the maximum amount of links per element. Use 0 for no limit.', 'mai-link-injector' ),
+						'key'           => 'maili_limit_el',
+						'name'          => 'limit_el',
+						'type'          => 'number',
+						'default_value' => maili_get_option_default( 'limit_el' ),
+					],
+					[
+						'label'         => __( 'Keyword link limit', 'mai-link-injector' ),
 						'instructions'  => __( 'Optionally limit the amount of instances specific keywords gets linked per-page. Use 0 for no limit.', 'mai-link-injector' ),
 						'key'           => 'maili_limit',
 						'name'          => 'limit',
@@ -188,6 +206,34 @@ class Mai_Link_Injector_Settings {
 	}
 
 	/**
+	 * Loads max field value from our custom option.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param array $field The field data.
+	 *
+	 * @return array
+	 */
+	function load_limit_max( $field ) {
+		$field['value'] = maili_get_option( 'limit_max' );
+		return $field;
+	}
+
+	/**
+	 * Loads element limit field value from our custom option.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param array $field The field data.
+	 *
+	 * @return array
+	 */
+	function load_limit_el( $field ) {
+		$field['value'] = maili_get_option( 'limit_el' );
+		return $field;
+	}
+
+	/**
 	 * Loads limit field value from our custom option.
 	 *
 	 * @since 1.1.0
@@ -261,10 +307,12 @@ class Mai_Link_Injector_Settings {
 		}
 
 		// Set data var.
-		$data  = [
-			'singles' => (array) get_field( 'maili_singles', 'option' ),
-			'limit'   => (int) get_field( 'maili_limit', 'option' ),
-			'links'   => [],
+		$data = [
+			'singles'   => (array) get_field( 'maili_singles', 'option' ),
+			'limit_max' => (int) get_field( 'maili_limit_max', 'option' ),
+			'limit_el'  => (int) get_field( 'maili_limit_el', 'option' ),
+			'limit'     => (int) get_field( 'maili_limit', 'option' ),
+			'links'     => [],
 		];
 
 		// Get links.
@@ -293,10 +341,14 @@ class Mai_Link_Injector_Settings {
 		$options = [
 			'options_links',
 			'options_maili_singles',
+			'options_maili_limit_max',
+			'options_maili_limit_el',
 			'options_maili_limit',
 			'options_maili_links',
 			'_options_links',
 			'_options_maili_singles',
+			'_options_maili_limit_max',
+			'_options_maili_limit_el',
 			'_options_maili_limit',
 			'_options_maili_links',
 		];

@@ -4,7 +4,7 @@
  * Plugin Name:     Mai Link Injector
  * Plugin URI:      https://bizbudding.com/
  * Description:     A programmatic plugin to automatically link keywords to any url.
- * Version:         1.3.0
+ * Version:         1.4.0
  *
  * Author:          BizBudding
  * Author URI:      https://bizbudding.com

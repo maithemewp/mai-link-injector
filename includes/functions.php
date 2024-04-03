@@ -66,9 +66,11 @@ function maili_get_options_defaults() {
 	}
 
 	$cache = [
-		'singles' => [ 'post' ],
-		'limit'   => 0,
-		'links'   => [],
+		'singles'   => [ 'post' ],
+		'limit_max' => 0,
+		'limit_el'  => 0,
+		'limit'     => 0,
+		'links'     => [],
 	];
 
 	return $cache;

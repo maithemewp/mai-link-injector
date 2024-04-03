@@ -38,65 +38,38 @@ class Mai_Link_Injector_Adder {
 	 */
 	function inject() {
 		$options = [
-			'singles' => (array) maili_get_option( 'singles' ),
-			'limit'   => (int) maili_get_option( 'limit' ),
-			'links'   => (array) maili_get_option( 'links' ),
+			'singles'   => (array) maili_get_option( 'singles' ),
+			'limit_max' => (int) maili_get_option( 'limit_max' ),
+			'limit_el'  => (int) maili_get_option( 'limit_el' ),
+			'limit'     => (int) maili_get_option( 'limit' ),
+			'links'     => (array) maili_get_option( 'links' ),
 		];
 
 		// Allow filtering of these values, prior to injecting.
 		$options = apply_filters( 'mai_link_injector', $options );
 
 		// Sanitize.
-		$options['singles'] = array_map( 'sanitize_key', $options['singles'] );
-		$options['limit']   = absint( $options['limit'] );
-		$options['links']   = $this->sanitize_links( $options['links'] );
+		$options['singles']   = array_map( 'sanitize_key', $options['singles'] );
+		$options['limit_max'] = absint( $options['limit_max'] );
+		$options['limit_el']  = absint( $options['limit_el'] );
+		$options['limit']     = absint( $options['limit'] );
+		$options['links']     = (array) $options['links']; // Sanitized in `Mai_Link_Injector` class.
 
+		// Bail if we don't have singles and links.
 		if ( ! ( $options['singles'] && $options['links'] ) ) {
 			return;
 		}
 
+		// Bail if we're not on a single post type.
 		if ( ! is_singular( $options['singles'] ) ) {
 			return;
 		}
 
+		// Inject links.
 		$class = new Mai_Link_Injector( $options['links'] );
+		$class->set_limit_max( $options['limit_max'] );
+		$class->set_limit_el( $options['limit_el'] );
 		$class->set_limit( $options['limit'] );
 		$class->run();
-	}
-
-	/**
-	 * Gets links from settings.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @return array
-	 */
-	function get_links() {
-		$links = (array) maili_get_option( 'links' );
-		$links = apply_filters( 'mai_link_injector_links', $links );
-	}
-
-	/**
-	 * Sanitizes links.
-	 *
-	 * @param  array $links
-	 *
-	 * @return array
-	 */
-	function sanitize_links( array $links ) {
-		$array = [];
-
-		foreach ( $links as $text => $url ) {
-			$text = esc_html( $text );
-			$url  = esc_url( $url );
-
-			if ( ! ( $text && $url ) ) {
-				continue;
-			}
-
-			$array[ $text ] = $url;
-		}
-
-		return $array;
 	}
 }

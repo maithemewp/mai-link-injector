@@ -8,6 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class Mai_Link_Injector {
 	protected $links; // Assocative array of 'the keyword string' => 'https://theurl.com'.
+	protected $limit_max; // Don't inject more than this number of links. Use 0 for no limit.
+	protected $limit_el; // Don't inject more than this number of links per element. Use 0 for no limit.
 	protected $limit; // Don't link more than this number of items. Use 0 for no limit.
 
 	/**
@@ -15,17 +17,49 @@ class Mai_Link_Injector {
 	 *
 	 * @since 0.1.0
 	 *
+	 * @param array $links The links to inject.
+	 *
 	 * @return void
 	 */
 	function __construct( array $links ) {
-		$this->links = $this->sanitize( $links );
-		$this->limit = 0;
+		$this->links     = $this->sanitize( $links );
+		$this->limit_max = 0;
+		$this->limit_el  = 0;
+		$this->limit     = 0;
+	}
+
+	/**
+	 * Set max number of links.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param int $limit The max number of links.
+	 *
+	 * @return int
+	 */
+	function set_limit_max( $limit ) {
+		$this->limit_max = absint( $limit );
+	}
+
+	/**
+	 * Set max number of links per element.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param int $limit The max number of links per element.
+	 *
+	 * @return int
+	 */
+	function set_limit_el( $limit ) {
+		$this->limit_el = absint( $limit );
 	}
 
 	/**
 	 * Set link limit per item.
 	 *
 	 * @since 0.1.0
+	 *
+	 * @param int $limit The link limit per item.
 	 *
 	 * @return int
 	 */
@@ -59,7 +93,13 @@ class Mai_Link_Injector {
 		$sanitized = [];
 
 		foreach ( $links as $text => $url ) {
-			$sanitized[ wp_kses_post( $this->strtolower( $text ) ) ] = esc_url( $url );
+			// Sanitize.
+			$text = sanitize_text_field( $text );
+			$text = $this->convert_quotes( $text );
+			$text = $this->strtolower( $text );
+			$url  = esc_url( $url );
+
+			$sanitized[ $text ] = $url;
 		}
 
 		return array_filter( $sanitized );
@@ -69,6 +109,8 @@ class Mai_Link_Injector {
 	 * Adds links to matching text in content.
 	 *
 	 * @since 0.1.0
+	 *
+	 * @param string $content The content.
 	 *
 	 * @return string
 	 */
@@ -111,9 +153,26 @@ class Mai_Link_Injector {
 		// Restore.
 		libxml_use_internal_errors( $libxml_previous_state );
 
+		// Create xpath.
 		$xpath = new DOMXPath( $dom );
 
+		// Get current url.
+		$current_url = $this->get_compare_url( home_url( add_query_arg( [] ) ) );
+
+		// Set the number of injected links.
+		$injected = 0;
+
+		// Loop through links.
 		foreach ( $this->links as $keywords => $url ) {
+			// Get compare url.
+			$link_url = $this->get_compare_url( $url );
+
+			// Skip if current url is the link url.
+			if ( $current_url === $link_url ) {
+				continue;
+			}
+
+			// Create the expression and set invalid elements.
 			$expression = sprintf( '//text()[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "%s")', $this->strtolower( $keywords )  );
 			$invalid    = [
 				'h1',
@@ -131,103 +190,261 @@ class Mai_Link_Injector {
 				'select',
 				'submit',
 				'textarea',
+				'*[contains(concat(" ", @class, " "), " mai-link-exclude ")]',
 			];
 
 			// Filter and sanitize.
 			$invalid = apply_filters( 'mai_link_injector_invalid_elements', $invalid );
-			$invalid = array_map( 'sanitize_key', $invalid );
+			$invalid = array_map( 'sanitize_text_field', $invalid );
 			$invalid = array_unique( $invalid );
 
 			// Add invalid tags to the expression.
-			foreach ( $invalid as $tag ) {
-				$expression .= sprintf( ' and not(ancestor::%s)', $tag );
+			if ( $invalid ) {
+				$expression .= ' and not(' . implode(' | ', array_map( function( $element ) {
+					return 'ancestor::' . $element;
+				}, $invalid ) ) . ')';
 			}
 
 			// Close the expression.
 			$expression .= ']';
 
 			// Run query.
-			$query = $xpath->query( $expression );
+			$results = $xpath->query( $expression );
 
 			// Bail if no results.
-			if ( ! $query->length ) {
+			if ( ! $results->length ) {
 				continue;
+			}
+
+			// Set total instances.
+			$instances = 0;
+
+			// Loop through query.
+			foreach ( $results as $node ) {
+				// Convert quotes to curly.
+				$node->nodeValue = $this->convert_quotes( $node->nodeValue );
+
+				// Add out how many times the keyword appears in a node.
+				$instances++;
+			}
+
+			// By default, no indexes.
+			$indexes = false;
+
+			// If we have a limit and the number of instances is over our limit.
+			if ( $this->limit && $instances > $this->limit ) {
+				$limit = $this->limit;
+
+				// If we have a max and the instances plus the injected links will be over our max.
+				if ( $this->limit_max && ( $instances + $injected ) > $this->limit_max ) {
+					// Set limit on this keyword to the max minus the injected, if it's less than the limit.
+					$limit = min( $this->limit_max - $injected, $limit );
+				}
+
+				// If we still have a limit, get indexes.
+				if ( $limit ) {
+					$indexes = $this->get_indexes( $instances, $limit );
+				}
 			}
 
 			// Start count.
 			$count = 1;
 
 			// Loop through query.
-			foreach ( $query as $node ) {
+			foreach ( $results as $index => $node ) {
+				// Bail if we hit the max.
+				if ( $this->limit_max && $injected >= $this->limit_max ) {
+					// Break out of both loops.
+					break 2;
+				}
+
 				// Bail if over limit.
 				if ( $this->limit && $count > $this->limit ) {
 					break;
 				}
 
-				/**
-				 * Replace the first insance of the keyword with a link.
-				 * Limited to 1 via the last param of `preg_replace_callback()`.
-				 * Added `htmlspecialchars()` because `&` in content threw errors.
-				 */
-				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url, &$count ) {
+				// Skip if we have a set amount of indexes and this is not one we're replacing.
+				if ( $indexes && ! isset( $indexes[ $index ] ) ) {
+					continue;
+				}
+
+				// If checking element limit.
+				if ( $this->limit_el ) {
+					// Get parent.
+					$parent = $this->get_parent( $node );
+
+					// If we have a parent node.
+					if ( $parent ) {
+						// Query for links.
+						// $links = $xpath->query( './/a[@class="mai-link-injected"]', $parent );
+						$links = $xpath->query( './/a', $parent );
+
+						// Skip if the parent node already has N links.
+						if ( $links->length >= $this->limit_el ) {
+							continue;
+						}
+					}
+				}
+
+				// Replace the first instance of the keyword.
+				$replaced = preg_replace_callback( "/\b({$keywords})\b/i", function( $matches ) use ( $url ) {
 					// Bail if no matches.
 					if ( ! isset( $matches[1] ) ) {
 						return $matches[0];
 					}
 
-					// Set the new text.
-					$text = $matches[1];
-
-					// Build attr.
-					$attr = [
-						'href' => esc_url( $url ),
-					];
-
-					// If external link, add target _blank and rel noopener.
-					if ( parse_url( esc_url( $url ), PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
-						$attr['target'] = '_blank';
-						$attr['rel']    = 'noopener';
-					}
-
-					/**
-					 * Allow filtering of the link attributes.
-					 *
-					 * @param array  $attr The link attributes.
-					 * @param string $url  The link URL.
-					 * @param string $text The link text.
-					 *
-					 * @return array
-					 */
-					$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
-
-					// Atts string.
-					$attributes = '';
-
-					// Loop through and add attr.
-					foreach ( $attr as $key => $value ) {
-						$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
-					}
-
 					// Return the replaced string.
-					return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+					return $this->get_replacement( $url, $matches[1] );
 
-				}, htmlspecialchars( $node->nodeValue ), 1 );
+				}, $node->nodeValue, 1 );
 
 				// Replace.
 				$fragment = $dom->createDocumentFragment();
 				$fragment->appendXml( $replaced );
 				$node->parentNode->replaceChild( $fragment, $node );
 
-				// Increment count.
+				// Increment counts.
 				$count++;
+				$injected++;
 			}
 		}
 
 		// Save and decode.
 		$content = $dom->saveHTML();
+		$content = htmlspecialchars_decode( $content );
 		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $content;
+	}
+
+	/**
+	 * Get the parent node.
+	 * Skip <span>, <strong>, and <em>.
+	 *
+	 * @param object $node
+	 *
+	 * @return mixed
+	 */
+	function get_parent( $node ) {
+		// If null, or a dom element that's not a span, strong, or em, return it.
+		if ( is_null( $node ) || ( $node instanceof DOMElement && ! in_array( $node->tagName, [ 'span', 'strong', 'em' ] ) ) ) {
+			return $node;
+		}
+
+		// Move up.
+		return $this->get_parent( $node->parentNode );
+	}
+
+	/**
+	 * Get the compare url.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param string $url The link URL.
+	 *
+	 * @return string
+	 */
+	function get_compare_url( $url ) {
+		// Parse the url.
+		$parsed = wp_parse_url( $url );
+
+		// Bail if no host or path.
+		if ( ! ( isset( $parsed['host'] ) && $parsed['host'] && isset( $parsed['path'] ) ) ) {
+			return $url;
+		}
+
+		// Remove www.
+		$parsed['host'] = str_replace( 'www.', '', $parsed['host'] );
+
+		return $parsed['host'] . $parsed['path'];
+	}
+
+	/**
+	 * Get indexes for the limit.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param int $instances The total number of instances.
+	 * @param int $limit     The limit.
+	 *
+	 * @return array
+	 */
+	function get_indexes( $instances, $limit ) {
+		$indexes = [];
+		$step    = (int) floor( $instances / $limit );
+
+		// Loop through the limit amount.
+		for ( $i = 0; $i < $limit; $i++ ) {
+			$indexes[] = (int) $i * $step;
+		}
+
+		return array_flip( $indexes );
+	}
+
+	/**
+	 * Get the replacement string.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param string $url  The link URL.
+	 * @param string $text The link text.
+	 *
+	 * @return string
+	 */
+	function get_replacement( $url, $text ) {
+		// Escape.
+		$url = esc_url( $url );
+
+		// Build attr.
+		$attr = [
+			'href'  => $url,
+			'class' => 'mai-link-injected',
+		];
+
+		// If external link, add target _blank and rel noopener.
+		if ( parse_url( $url, PHP_URL_HOST ) !== parse_url( home_url(), PHP_URL_HOST ) ) {
+			$attr['target'] = '_blank';
+			$attr['rel']    = 'noopener';
+		}
+
+		/**
+		 * Allow filtering of the link attributes.
+		 *
+		 * @param array  $attr The link attributes.
+		 * @param string $url  The link URL.
+		 * @param string $text The link text.
+		 *
+		 * @return array
+		 */
+		$attr = (array) apply_filters( 'mai_link_injector_link_attributes', $attr, $url, $text );
+
+		// Atts string.
+		$attributes = '';
+
+		// Loop through and add attr.
+		foreach ( $attr as $key => $value ) {
+			$attributes .= sprintf( ' %s="%s"', esc_attr( $key ), esc_attr( $value ) );
+		}
+
+		// Return the replaced string.
+		return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+	}
+
+	/**
+	 * Convert quotes to curly quotes.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param string $string The string to convert.
+	 *
+	 * @return string
+	 */
+	function convert_quotes( $string ) {
+		$string = htmlspecialchars_decode( $string ); // Decode entities like single quotes to actual single quotes.
+		$string = wptexturize( $string ); // Convert straight quotes to curly, this also encodes again.
+		$string = html_entity_decode( $string, ENT_QUOTES, 'UTF-8' ); // Decode to curly quotes.
+
+		return $string;
 	}
 
 	/**
