@@ -124,34 +124,7 @@ class Mai_Link_Injector {
 		}
 
 		// Create the new document.
-		$dom = new DOMDocument();
-
-		// Modify state.
-		$libxml_previous_state = libxml_use_internal_errors( true );
-
-		// Encode.
-		$content = mb_encode_numericentity( $content, [0x80, 0x10FFFF, 0, ~0], 'UTF-8' );
-
-		// Load the content in the document HTML.
-		$dom->loadHTML( "<div>$content</div>" );
-
-		// Handle wraps.
-		$container = $dom->getElementsByTagName('div')->item(0);
-		$container = $container->parentNode->removeChild( $container );
-
-		while ( $dom->firstChild ) {
-			$dom->removeChild( $dom->firstChild );
-		}
-
-		while ( $container->firstChild ) {
-			$dom->appendChild( $container->firstChild );
-		}
-
-		// Handle errors.
-		libxml_clear_errors();
-
-		// Restore.
-		libxml_use_internal_errors( $libxml_previous_state );
+		$dom = $this->get_dom_document( $content );
 
 		// Create xpath.
 		$xpath = new DOMXPath( $dom );
@@ -298,12 +271,23 @@ class Mai_Link_Injector {
 
 				}, $node->nodeValue, 1 );
 
-				// Special characters were blowing up the content here.
-				$replaced = htmlspecialchars( $replaced );
-
-				// Replace.
+				/**
+				 * Build the temporary dom.
+				 * Special characters were causing issues with `appendXML()`.
+				 *
+				 * @link https://stackoverflow.com/questions/4645738/domdocument-appendxml-with-special-characters
+				 * @link https://www.py4u.net/discuss/974358
+				 */
+				$tmp      = $this->get_dom_document( $replaced );
 				$fragment = $dom->createDocumentFragment();
-				$fragment->appendXml( $replaced );
+
+				// Import the nodes.
+				foreach ( $tmp->childNodes as $child ) {
+					$new = $dom->importNode( $child, true );
+					$fragment->appendChild( $new );
+				}
+
+				// Replace the node with the fragment.
 				$node->parentNode->replaceChild( $fragment, $node );
 
 				// Increment counts.
@@ -312,10 +296,8 @@ class Mai_Link_Injector {
 			}
 		}
 
-		// Save and decode.
-		$content = $dom->saveHTML();
-		$content = htmlspecialchars_decode( $content );
-		$content = mb_convert_encoding( $content, 'UTF-8', 'HTML-ENTITIES' );
+		// Get the HTML.
+		$content = $this->get_dom_html( $dom );
 
 		return $content;
 	}
@@ -395,12 +377,9 @@ class Mai_Link_Injector {
 	 * @return string
 	 */
 	function get_replacement( $url, $text ) {
-		// Escape.
-		$url = esc_url( $url );
-
 		// Build attr.
 		$attr = [
-			'href'  => $url,
+			'href'  => $url, // Already sanitized.
 			'class' => 'mai-link-injected',
 		];
 
@@ -430,7 +409,7 @@ class Mai_Link_Injector {
 		}
 
 		// Return the replaced string.
-		return sprintf('<a%s>%s</a>', $attributes, htmlspecialchars( $text ) );
+		return sprintf('<a%s>%s</a>', $attributes, $text );
 	}
 
 	/**
@@ -461,5 +440,66 @@ class Mai_Link_Injector {
 	 */
 	function strtolower( $string ) {
 		return mb_strtolower( (string) $string, 'UTF-8' );
+	}
+
+	/**
+	 * Get the DOM document.
+	 *
+	 * @since TBD
+	 *
+	 * @param string $html The HTML to load.
+	 *
+	 * @return DOMDocument
+	 */
+	function get_dom_document( $html ) {
+		// Create the new document.
+		$dom = new DOMDocument();
+
+		// Modify state.
+		$libxml_previous_state = libxml_use_internal_errors( true );
+
+		// Encode.
+		$html = mb_encode_numericentity( $html, [0x80, 0x10FFFF, 0, ~0], 'UTF-8' );
+
+		// Load the content in the document HTML.
+		$dom->loadHTML( "<div>$html</div>" );
+
+		// Handle wraps.
+		$container = $dom->getElementsByTagName('div')->item(0);
+		$container = $container->parentNode->removeChild( $container );
+
+		while ( $dom->firstChild ) {
+			$dom->removeChild( $dom->firstChild );
+		}
+
+		while ( $container->firstChild ) {
+			$dom->appendChild( $container->firstChild );
+		}
+
+		// Handle errors.
+		libxml_clear_errors();
+
+		// Restore.
+		libxml_use_internal_errors( $libxml_previous_state );
+
+		return $dom;
+	}
+
+	/**
+	 * Get the HTML from a DOM document.
+	 *
+	 * @since TBD
+	 *
+	 * @param DOMDocument $dom The DOM document.
+	 *
+	 * @return string
+	 */
+	function get_dom_html( $dom ) {
+		// Save and decode.
+		$html = $dom->saveHTML();
+		$html = htmlspecialchars_decode( $html );
+		$html = mb_convert_encoding( $html, 'UTF-8', 'HTML-ENTITIES' );
+
+		return $html;
 	}
 }

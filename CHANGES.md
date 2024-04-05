@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1 (4/5/24)
+* Fixed: Special characters caused some elements to get removed from the content.
+
 ## 1.4.0 (4/3/24)
 * Added: New "Total link limit" setting to set the maximum amount of injected links on a page.
 * Added: New "Element link limit" setting to set the maximum amount of links per element.
