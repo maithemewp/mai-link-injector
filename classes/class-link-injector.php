@@ -298,6 +298,9 @@ class Mai_Link_Injector {
 
 				}, $node->nodeValue, 1 );
 
+				// Special characters were blowing up the content here.
+				$replaced = htmlspecialchars( $replaced );
+
 				// Replace.
 				$fragment = $dom->createDocumentFragment();
 				$fragment->appendXml( $replaced );

@@ -1,7 +1,10 @@
 # Changelog
 
 ## 1.4.0 (4/3/24)
-* Added: New "Total link limit" setting to limit the total amount of injected links allowed on a page.
+* Added: New "Total link limit" setting to set the maximum amount of injected links on a page.
+* Added: New "Element link limit" setting to set the maximum amount of links per element.
+* Added: New "Keyword link limit" setting to optionally limit the amount of instances specific keywords get linked per-page.
+* Added: Now you can use `mai-link-exclude` class to allow skipping elements and their children from getting links injected.
 * Changed: Only the first link in a single element is counted.
 * Changed: The links are now spread out among the total instances of the keywords.
 * Changed: Skip links to the same page.
