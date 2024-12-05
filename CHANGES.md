@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.2 (12/5/24)
+* Changed: Updated the updater.
+
 ## 1.4.1 (4/5/24)
 * Fixed: Special characters caused some elements to get removed from the content.
 
@@ -20,7 +23,7 @@
 * Fixed: Encoding compatibility with PHP 8.2.
 
 ## 1.2.1 (11/27/23)
-* Changed: Update updater.
+* Changed: Updated the updater.
 
 ## 1.2.0 (3/20/23)
 * Changed: Disabled pagination on repeater since it doesn't work correctly when we load from separate option.
