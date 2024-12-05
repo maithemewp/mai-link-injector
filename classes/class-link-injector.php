@@ -497,8 +497,6 @@ class Mai_Link_Injector {
 	function get_dom_html( $dom ) {
 		// Save and decode.
 		$html = $dom->saveHTML();
-		$html = htmlspecialchars_decode( $html );
-		$html = mb_convert_encoding( $html, 'UTF-8', 'HTML-ENTITIES' );
 
 		return $html;
 	}

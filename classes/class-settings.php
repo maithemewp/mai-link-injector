@@ -195,6 +195,10 @@ class Mai_Link_Injector_Settings {
 	 * @return array
 	 */
 	function load_singles( $field ) {
+		if ( ! is_admin() ) {
+			return $field;
+		}
+
 		$field['value'] = maili_get_option( 'singles' );
 		$post_types     = get_post_types( [ 'public' => true ], 'objects' );
 
@@ -215,7 +219,12 @@ class Mai_Link_Injector_Settings {
 	 * @return array
 	 */
 	function load_limit_max( $field ) {
+		if ( ! is_admin() ) {
+			return $field;
+		}
+
 		$field['value'] = maili_get_option( 'limit_max' );
+
 		return $field;
 	}
 
@@ -229,7 +238,12 @@ class Mai_Link_Injector_Settings {
 	 * @return array
 	 */
 	function load_limit_el( $field ) {
+		if ( ! is_admin() ) {
+			return $field;
+		}
+
 		$field['value'] = maili_get_option( 'limit_el' );
+
 		return $field;
 	}
 
@@ -243,7 +257,12 @@ class Mai_Link_Injector_Settings {
 	 * @return array
 	 */
 	function load_limit( $field ) {
+		if ( ! is_admin() ) {
+			return $field;
+		}
+
 		$field['value'] = maili_get_option( 'limit' );
+
 		return $field;
 	}
 
@@ -257,6 +276,10 @@ class Mai_Link_Injector_Settings {
 	 * @return array
 	 */
 	function load_links( $field ) {
+		if ( ! is_admin() ) {
+			return $field;
+		}
+
 		$field['value'] = [];
 		$links          = maili_get_option( 'links' );
 

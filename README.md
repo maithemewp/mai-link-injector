@@ -67,6 +67,7 @@ add_filter( 'mai_link_injector', function( $options ) {
 		[
 			'taxonomy'   => $taxonomy,
 			'hide_empty' => false,
+			'fields'     => 'id=>name',
 		]
 	);
 
@@ -78,8 +79,8 @@ add_filter( 'mai_link_injector', function( $options ) {
 	// Create array of keywords => links.
 	$links = [];
 
-	foreach ( $terms as $term ) {
-		$links[ $term->name ] = get_term_link( $term, $taxonomy );
+	foreach ( $terms as $term_id => $term_name ) {
+		$links[ $term_name ] = get_term_link( $term_id, $taxonomy );
 	}
 
 	// Bail if no links.
