@@ -271,6 +271,11 @@ class Mai_Link_Injector {
 
 				}, $node->nodeValue, 1 );
 
+				// Skip if no replacement.
+				if ( $node->nodeValue === $replaced ) {
+					continue;
+				}
+
 				/**
 				 * Build the temporary dom.
 				 * Special characters were causing issues with `appendXML()`.
