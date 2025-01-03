@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.3 (1/3/24)
+* Fixed: Partial text matches were being counted even though they didn't create links.
+
 ## 1.4.2 (12/5/24)
 * Changed: Updated the updater.
 
