@@ -399,9 +399,11 @@ class Mai_Link_Injector_Settings {
 			return $actions;
 		}
 
-		$actions['settings'] = $this->get_settings_link( __( 'Settings', 'mai-link-injector' ) );
+		$custom = [
+			'settings' => $this->get_settings_link( __( 'Settings', 'mai-link-injector' ) ),
+		];
 
-		return $actions;
+		return array_merge( $custom, $actions );
 	}
 
 	/**
