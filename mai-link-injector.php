@@ -5,6 +5,7 @@
  * Plugin URI:      https://bizbudding.com/
  * Description:     A programmatic plugin to automatically link keywords to any url.
  * Version:         1.4.3
+ * Requires PHP:    8.1
  *
  * Author:          BizBudding
  * Author URI:      https://bizbudding.com
